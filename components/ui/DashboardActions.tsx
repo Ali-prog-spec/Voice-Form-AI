@@ -34,7 +34,7 @@ export function DemoButton() {
   return (
     <>
       <button
-        className="btn-secondary text-xs sm:text-sm flex items-center gap-1.5 border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300"
+        className="btn-secondary text-xs flex items-center gap-1.5"
         disabled={busy}
         onClick={async () => {
           setBusy(true);

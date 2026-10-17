@@ -9,10 +9,10 @@ interface Props {
 }
 
 const choice = (active: boolean) =>
-  `btn border transition-all duration-200 ${
+  `btn border transition-colors ${
     active
-      ? "border-indigo-400 bg-indigo-600/30 text-white shadow-glow-sm font-semibold ring-1 ring-indigo-400/50"
-      : "border-white/[0.1] bg-white/[0.04] text-slate-300 hover:bg-white/[0.08] hover:text-white hover:border-white/[0.2]"
+      ? "border-blue-500 bg-blue-600/20 text-white font-medium ring-1 ring-blue-500/40"
+      : "border-white/[0.08] bg-zinc-900/60 text-zinc-300 hover:bg-zinc-800 hover:text-white hover:border-white/[0.14]"
   }`;
 
 export default function QuestionInput({ question: q, value, onChange }: Props) {

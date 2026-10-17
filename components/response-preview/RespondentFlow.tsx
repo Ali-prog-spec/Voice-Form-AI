@@ -140,15 +140,15 @@ export default function RespondentFlow({ form }: { form: PublicForm }) {
 
   const progress = (
     <div className="mb-8">
-      <div className="flex items-center justify-between text-xs font-medium text-slate-400 mb-2">
-        <span>{stage === "questions" ? `Question ${idx + 1} of ${qs.length}` : "Review Answers"}</span>
-        <span className="font-mono text-indigo-400">
-          {Math.round(((stage === "questions" ? idx : qs.length) / qs.length) * 100)}% Complete
+      <div className="flex items-center justify-between text-xs font-medium text-zinc-400 mb-2">
+        <span>{stage === "questions" ? `Question ${idx + 1} of ${qs.length}` : "Review answers"}</span>
+        <span className="font-mono text-zinc-400">
+          {Math.round(((stage === "questions" ? idx : qs.length) / qs.length) * 100)}%
         </span>
       </div>
-      <div className="h-2 rounded-full bg-white/[0.08] overflow-hidden p-0.5 border border-white/[0.05]" role="progressbar" aria-valuemin={0} aria-valuemax={qs.length} aria-valuenow={stage === "questions" ? idx : qs.length}>
+      <div className="h-1.5 rounded-full bg-zinc-800 overflow-hidden" role="progressbar" aria-valuemin={0} aria-valuemax={qs.length} aria-valuenow={stage === "questions" ? idx : qs.length}>
         <div
-          className="h-full rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-sky-400 transition-all duration-300 shadow-glow-sm"
+          className="h-full rounded-full bg-blue-600 transition-all duration-200"
           style={{ width: `${((stage === "questions" ? idx : qs.length) / qs.length) * 100}%` }}
         />
       </div>
@@ -231,7 +231,7 @@ export default function RespondentFlow({ form }: { form: PublicForm }) {
             {draft.transcript && (
               <p className="mb-3 text-sm italic text-slate-400">You said: “{draft.transcript}”</p>
             )}
-            <p className="text-xs font-semibold uppercase tracking-wider text-indigo-400">AI understood</p>
+            <p className="text-xs font-medium uppercase tracking-wider text-blue-400">AI parsed</p>
             <p className="mt-1 text-xl font-bold text-white">
               {hasValue ? formatAnswer(q, draft.value!) : "I couldn’t work out an answer."}
             </p>

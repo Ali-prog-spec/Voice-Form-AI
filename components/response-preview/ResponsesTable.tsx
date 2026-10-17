@@ -17,37 +17,37 @@ export default function ResponsesTable({ questions, sessions }: { questions: Que
   }
 
   return (
-    <div className="mt-6 overflow-hidden rounded-2xl border border-white/[0.1] bg-[#0c1224]/80 shadow-2xl backdrop-blur-xl">
+    <div className="mt-6 overflow-hidden rounded-xl border border-white/[0.08] bg-[#121316] shadow-card">
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
-          <thead className="border-b border-white/[0.08] bg-black/40 text-xs uppercase tracking-wider text-slate-400 font-semibold">
+          <thead className="border-b border-white/[0.06] bg-zinc-900/60 text-xs uppercase tracking-wider text-zinc-400 font-semibold">
             <tr>
-              <th className="whitespace-nowrap px-5 py-3.5">Submitted</th>
+              <th className="whitespace-nowrap px-4 py-3">Submitted</th>
               {questions.map((q) => (
-                <th key={q.id} className="min-w-44 px-5 py-3.5 font-semibold text-slate-300">
+                <th key={q.id} className="min-w-40 px-4 py-3 font-semibold text-zinc-300">
                   {q.question_text}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/[0.05]">
+          <tbody className="divide-y divide-white/[0.04]">
             {sessions.map((s) => {
               const byQ = new Map(s.responses.map((r) => [r.question_id, r.ai_answer]));
               return (
-                <tr key={s.id} className="hover:bg-white/[0.03] transition-colors align-top">
-                  <td className="whitespace-nowrap px-5 py-4 text-xs font-mono text-slate-400">
+                <tr key={s.id} className="hover:bg-white/[0.02] transition-colors align-top">
+                  <td className="whitespace-nowrap px-4 py-3.5 text-xs font-mono text-zinc-400">
                     {new Date(s.completed_at).toLocaleString()}
                   </td>
                   {questions.map((q) => {
                     const ans = byQ.get(q.id);
                     return (
-                      <td key={q.id} className="px-5 py-4 text-slate-200">
+                      <td key={q.id} className="px-4 py-3.5 text-zinc-200">
                         {ans !== null && ans !== undefined && ans !== "" ? (
-                          <span className="inline-block rounded-md bg-white/[0.04] px-2.5 py-1 text-xs text-indigo-200 border border-white/[0.06]">
+                          <span className="inline-block rounded bg-zinc-900 px-2 py-0.5 text-xs text-zinc-200 border border-white/[0.06]">
                             {String(ans)}
                           </span>
                         ) : (
-                          <span className="text-slate-600">—</span>
+                          <span className="text-zinc-600">—</span>
                         )}
                       </td>
                     );

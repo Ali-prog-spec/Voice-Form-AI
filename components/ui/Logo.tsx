@@ -7,36 +7,42 @@ interface LogoProps {
   className?: string;
 }
 
-export default function Logo({ size = 42, href = "/", showTagline = false, className = "" }: LogoProps) {
+export default function Logo({ size = 32, href = "/", showTagline = false, className = "" }: LogoProps) {
   return (
     <Link
       href={href}
-      className={`group inline-flex items-center gap-3 transition-transform duration-200 hover:scale-[1.02] ${className}`}
+      className={`group inline-flex items-center gap-2.5 transition-opacity hover:opacity-90 ${className}`}
     >
-      <div className="relative flex items-center justify-center">
-        {/* Ambient neon backglow behind logo */}
-        <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-indigo-500/40 via-purple-500/30 to-sky-400/40 blur-md opacity-60 group-hover:opacity-100 transition-opacity duration-300" />
-        
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/logo.png"
-          alt="VoiceForm AI"
-          width={size}
-          height={size}
-          className="relative rounded-xl border border-white/10 shadow-lg object-contain bg-black"
-        />
+      {/* Minimalist Geometric Vector Mark */}
+      <div
+        className="relative flex items-center justify-center rounded-lg border border-white/[0.1] bg-[#16171a] shadow-sm transition-colors group-hover:border-white/[0.18]"
+        style={{ width: `${size}px`, height: `${size}px` }}
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="w-3/5 h-3/5 text-white"
+        >
+          {/* Minimalist Voice-Waveform Bars */}
+          <rect x="3" y="9" width="2" height="6" rx="1" fill="#71717A" />
+          <rect x="7" y="6" width="2" height="12" rx="1" fill="#EDEDED" />
+          <rect x="11" y="4" width="2" height="16" rx="1" fill="#3B82F6" />
+          <rect x="15" y="7" width="2" height="10" rx="1" fill="#EDEDED" />
+          <rect x="19" y="10" width="2" height="4" rx="1" fill="#71717A" />
+        </svg>
       </div>
 
       <div className="flex flex-col">
-        <div className="flex items-center font-bold tracking-tight text-lg text-white">
-          <span className="text-white drop-shadow-sm">VoiceForm</span>
-          <span className="ml-1 bg-gradient-to-r from-indigo-400 via-purple-400 to-sky-400 bg-clip-text text-transparent font-extrabold drop-shadow">
+        <div className="flex items-center gap-1.5 font-semibold text-sm tracking-tight text-[#ededed]">
+          <span>VoiceForm</span>
+          <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-white/[0.06] text-zinc-400 border border-white/[0.06] font-normal">
             AI
           </span>
         </div>
         {showTagline && (
-          <span className="text-[10px] uppercase font-semibold tracking-[0.2em] text-slate-400 group-hover:text-indigo-300 transition-colors">
-            Speak • AI Fills • Done
+          <span className="text-[11px] text-zinc-400 font-normal">
+            Conversational voice forms
           </span>
         )}
       </div>
