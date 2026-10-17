@@ -9,7 +9,11 @@ interface Props {
 }
 
 const choice = (active: boolean) =>
-  `btn border ${active ? "border-brand-600 bg-brand-50 text-brand-700" : "border-slate-300 bg-white text-slate-800 hover:bg-slate-50"}`;
+  `btn border transition-all duration-200 ${
+    active
+      ? "border-indigo-400 bg-indigo-600/30 text-white shadow-glow-sm font-semibold ring-1 ring-indigo-400/50"
+      : "border-white/[0.1] bg-white/[0.04] text-slate-300 hover:bg-white/[0.08] hover:text-white hover:border-white/[0.2]"
+  }`;
 
 export default function QuestionInput({ question: q, value, onChange }: Props) {
   switch (q.question_type) {

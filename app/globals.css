@@ -2,18 +2,104 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background-color: #05070e;
+  color: #f1f5f9;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  overflow-x: hidden;
+}
+
+/* Custom Sleek Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #05070e;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 9999px;
+  border: 2px solid #05070e;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
 @layer components {
+  /* 3D Glass Surface */
+  .card {
+    @apply relative rounded-2xl border border-white/[0.08] bg-[#0c1222]/70 p-6 shadow-2xl backdrop-blur-xl transition-all duration-300;
+    box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7), inset 0 1px 1px 0 rgba(255, 255, 255, 0.12);
+  }
+  
+  .card:hover {
+    border-color: rgba(99, 102, 241, 0.25);
+  }
+
+  /* Interactive 3D Perspective Card */
+  .card-3d-wrap {
+    perspective: 1200px;
+  }
+
+  .card-3d {
+    transform-style: preserve-3d;
+    transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1), box-shadow 0.4s ease;
+  }
+
+  /* High-Performance Buttons */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition
-      focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2
-      disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200
+      focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#05070e]
+      disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98];
   }
-  .btn-primary { @apply btn bg-brand-600 text-white hover:bg-brand-700; }
-  .btn-secondary { @apply btn border border-slate-300 bg-white text-slate-800 hover:bg-slate-50; }
-  .btn-danger { @apply btn text-red-600 hover:bg-red-50; }
+
+  .btn-primary {
+    @apply btn relative overflow-hidden bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 text-white font-semibold
+      border border-indigo-400/30 hover:border-indigo-300/60
+      hover:from-indigo-500 hover:via-indigo-400 hover:to-purple-500
+      shadow-[0_0_24px_rgba(99,102,241,0.38)] hover:shadow-[0_0_36px_rgba(99,102,241,0.58)];
+  }
+
+  .btn-secondary {
+    @apply btn border border-white/[0.1] bg-white/[0.04] text-slate-200 backdrop-blur-md
+      hover:bg-white/[0.08] hover:border-white/[0.2] hover:text-white shadow-sm;
+  }
+
+  .btn-danger {
+    @apply btn border border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:border-red-500/40;
+  }
+
+  /* Form Inputs */
   .input {
-    @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900
-      placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100;
+    @apply w-full rounded-xl border border-white/[0.1] bg-[#080d1a]/80 px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-500
+      backdrop-blur-sm transition-all duration-200
+      focus:border-brand-500 focus:bg-[#0b1224] focus:outline-none focus:ring-2 focus:ring-brand-500/30;
+    box-shadow: inset 0 1px 2px 0 rgba(0, 0, 0, 0.4);
   }
-  .card { @apply rounded-xl border border-slate-200 bg-white p-5 shadow-sm; }
+}
+
+/* Ambient Background Glow Orbs */
+.ambient-glow-indigo {
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.18) 0%, rgba(99, 102, 241, 0) 70%);
+}
+
+.ambient-glow-purple {
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, rgba(139, 92, 246, 0) 70%);
+}
+
+.ambient-glow-cyan {
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.12) 0%, rgba(56, 189, 248, 0) 70%);
+}
+
+/* Mesh grid subtle background overlay */
+.bg-grid-pattern {
+  background-size: 40px 40px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
 }

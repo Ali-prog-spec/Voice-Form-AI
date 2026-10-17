@@ -140,21 +140,29 @@ export default function RespondentFlow({ form }: { form: PublicForm }) {
 
   const progress = (
     <div className="mb-8">
-      <p className="mb-2 text-sm text-slate-500">
-        {stage === "questions" ? `Question ${idx + 1} of ${qs.length}` : "Review"}
-      </p>
-      <div className="h-1.5 rounded-full bg-slate-200" role="progressbar" aria-valuemin={0} aria-valuemax={qs.length} aria-valuenow={stage === "questions" ? idx : qs.length}>
-        <div className="h-full rounded-full bg-brand-600 transition-all" style={{ width: `${((stage === "questions" ? idx : qs.length) / qs.length) * 100}%` }} />
+      <div className="flex items-center justify-between text-xs font-medium text-slate-400 mb-2">
+        <span>{stage === "questions" ? `Question ${idx + 1} of ${qs.length}` : "Review Answers"}</span>
+        <span className="font-mono text-indigo-400">
+          {Math.round(((stage === "questions" ? idx : qs.length) / qs.length) * 100)}% Complete
+        </span>
+      </div>
+      <div className="h-2 rounded-full bg-white/[0.08] overflow-hidden p-0.5 border border-white/[0.05]" role="progressbar" aria-valuemin={0} aria-valuemax={qs.length} aria-valuenow={stage === "questions" ? idx : qs.length}>
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-sky-400 transition-all duration-300 shadow-glow-sm"
+          style={{ width: `${((stage === "questions" ? idx : qs.length) / qs.length) * 100}%` }}
+        />
       </div>
     </div>
   );
 
   if (stage === "done")
     return (
-      <div className="card py-12 text-center">
-        <div className="text-4xl">✅</div>
-        <h2 className="mt-3 text-xl font-semibold">Thank you!</h2>
-        <p className="mt-1 text-slate-600">Your response has been submitted.</p>
+      <div className="card py-16 text-center border-emerald-500/30">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-500/10 border border-emerald-500/25 text-3xl mb-4 shadow-glow-sm">
+          ✓
+        </div>
+        <h2 className="text-2xl font-bold text-white">Thank you!</h2>
+        <p className="mt-2 text-slate-400">Your response has been transcribed, structured, and saved successfully.</p>
       </div>
     );
 
@@ -221,14 +229,14 @@ export default function RespondentFlow({ form }: { form: PublicForm }) {
         {reviewing && !editing && (
           <div className="card">
             {draft.transcript && (
-              <p className="mb-3 text-sm italic text-slate-500">You said: “{draft.transcript}”</p>
+              <p className="mb-3 text-sm italic text-slate-400">You said: “{draft.transcript}”</p>
             )}
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">AI understood</p>
-            <p className="mt-1 text-xl font-semibold">
+            <p className="text-xs font-semibold uppercase tracking-wider text-indigo-400">AI understood</p>
+            <p className="mt-1 text-xl font-bold text-white">
               {hasValue ? formatAnswer(q, draft.value!) : "I couldn’t work out an answer."}
             </p>
             {unsure && hasValue && (
-              <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              <p className="mt-2 rounded-xl bg-amber-500/10 border border-amber-500/20 px-3.5 py-2 text-sm text-amber-300">
                 I’m not completely sure — please confirm this is right, or edit it.
               </p>
             )}
@@ -254,14 +262,14 @@ export default function RespondentFlow({ form }: { form: PublicForm }) {
           </div>
         )}
 
-        {error && <p role="alert" className="mt-4 text-sm text-red-600">{error}</p>}
+        {error && <p role="alert" className="mt-4 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl p-3">{error}</p>}
 
         {reviewing && !editing && (
           <div className="mt-6 flex flex-wrap gap-2">
             <button className="btn-secondary" onClick={() => setEditing(true)}>Edit</button>
             <button className="btn-secondary" onClick={() => { setDraft(null); setError(null); }}>Retry</button>
             {hasValue && (
-              <button className="btn-primary ml-auto" disabled={busy} onClick={() => saveAndContinue(draft)}>
+              <button className="btn-primary ml-auto shadow-glow-sm" disabled={busy} onClick={() => saveAndContinue(draft)}>
                 {busy ? "Saving…" : unsure ? "Confirm & continue →" : isLast ? "Continue →" : "Continue →"}
               </button>
             )}
@@ -269,7 +277,7 @@ export default function RespondentFlow({ form }: { form: PublicForm }) {
         )}
       </div>
 
-      <div className="mt-10 flex items-center justify-between border-t border-slate-200 pt-4">
+      <div className="mt-10 flex items-center justify-between border-t border-white/[0.08] pt-4">
         <button className="btn-secondary" disabled={idx === 0 || busy} onClick={() => goTo(idx - 1)}>← Back</button>
         {!q.is_required && !reviewing && (
           <button className="btn-secondary" disabled={busy} onClick={() => saveAndContinue(null)}>Skip →</button>

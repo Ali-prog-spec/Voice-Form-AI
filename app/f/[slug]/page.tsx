@@ -11,13 +11,19 @@ export default async function PublicFormPage({ params }: { params: Promise<{ slu
   if (!form) notFound();
 
   return (
-    <main className="mx-auto min-h-screen max-w-xl px-4 py-10">
+    <main className="relative z-10 mx-auto min-h-screen max-w-xl px-4 py-12 flex flex-col justify-center">
       <header className="mb-8 text-center">
-        <div className="mb-4 flex justify-center"><Logo size={32} /></div>
-        <h1 className="text-lg font-semibold text-slate-700">{form.title}</h1>
-        {form.description && <p className="mt-1 text-sm text-slate-500">{form.description}</p>}
+        <div className="mb-5 flex justify-center">
+          <Logo size={44} showTagline={true} />
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">{form.title}</h1>
+        {form.description && (
+          <p className="mt-2 text-sm text-slate-400 max-w-md mx-auto leading-relaxed">{form.description}</p>
+        )}
       </header>
-      <RespondentFlow form={form} />
+      <div className="relative">
+        <RespondentFlow form={form} />
+      </div>
     </main>
   );
 }

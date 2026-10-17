@@ -33,15 +33,15 @@ const FALLBACK: AiResult = {
 
 const LOW_CONFIDENCE = 0.75;
 
-/** Provider-specific: OpenAI chat completions. Swap this function to change providers. */
+/** Provider-specific: Groq (OpenAI-compatible) chat completions. Swap this function to change providers. */
 async function callModel(userPayload: unknown): Promise<string> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error("OPENAI_API_KEY is not configured");
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) throw new Error("GROQ_API_KEY is not configured");
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: process.env.OPENAI_CHAT_MODEL || "gpt-4o-mini",
+      model: process.env.GROQ_CHAT_MODEL || "llama-3.3-70b-versatile",
       temperature: 0,
       response_format: { type: "json_object" },
       messages: [

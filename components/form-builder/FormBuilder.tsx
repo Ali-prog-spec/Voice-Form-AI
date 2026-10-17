@@ -91,8 +91,8 @@ export default function FormBuilder({ form, questions }: { form?: Form; question
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-10">
-      <Link href="/dashboard" className="text-sm text-slate-500 hover:underline">← Dashboard</Link>
-      <h1 className="mt-2 text-2xl font-bold">{form ? "Edit form" : "New form"}</h1>
+      <Link href="/dashboard" className="text-sm font-medium text-slate-400 hover:text-white transition-colors">← Back to Dashboard</Link>
+      <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-white">{form ? "Edit form" : "New form"}</h1>
 
       <section className="card mt-6 space-y-4">
         <label className="block text-sm font-medium">
@@ -159,9 +159,9 @@ export default function FormBuilder({ form, questions }: { form?: Form; question
 
       <button className="btn-secondary mt-4" onClick={() => setQs((all) => [...all, blank()])}>+ Add question</button>
 
-      <div className="sticky bottom-0 -mx-4 mt-8 border-t border-slate-200 bg-slate-50/95 px-4 py-4 backdrop-blur">
+      <div className="sticky bottom-0 -mx-4 mt-8 border-t border-white/[0.08] bg-[#0c1222]/95 px-4 py-4 backdrop-blur-md">
         {msg && (
-          <p role="status" className={`mb-2 text-sm ${msg.ok ? "text-green-700" : "text-red-600"}`}>{msg.text}</p>
+          <p role="status" className={`mb-2 text-sm ${msg.ok ? "text-emerald-400" : "text-red-400"}`}>{msg.text}</p>
         )}
         <div className="flex flex-wrap items-center gap-2">
           <button className="btn-secondary" disabled={busy} onClick={onSave}>Save draft</button>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Mic, Square, Loader2, Check } from "lucide-react";
 
 export type RecorderState = "idle" | "recording" | "processing" | "success" | "error";
 
@@ -109,28 +110,58 @@ export default function VoiceRecorder({ onAudio, disabled, maxSeconds = 90 }: Pr
   const busy = state === "processing";
 
   return (
-    <div className="flex flex-col items-center gap-3" aria-live="polite">
-      <button
-        type="button"
-        onClick={recording ? stop : start}
-        disabled={disabled || busy}
-        aria-label={recording ? "Stop recording" : "Start recording"}
-        className={`flex h-24 w-24 items-center justify-center rounded-full text-4xl text-white shadow-lg transition
-          focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-100 disabled:opacity-60
-          ${recording ? "animate-pulse bg-red-500 hover:bg-red-600" : "bg-brand-600 hover:bg-brand-700"}`}
-      >
-        {busy ? <span className="h-8 w-8 animate-spin rounded-full border-4 border-white/40 border-t-white" /> : recording ? "■" : "🎙"}
-      </button>
-      <p className="text-sm text-slate-600">
-        {state === "idle" && "Tap to speak"}
-        {recording && `Listening… ${seconds}s — tap to stop`}
-        {busy && "Processing…"}
-        {state === "success" && "Got it ✓"}
-        {state === "error" && "Tap the mic to try again"}
-      </p>
-      {error && (
-        <p role="alert" className="max-w-sm text-center text-sm text-red-600">{error}</p>
-      )}
+    <div className="flex flex-col items-center gap-4" aria-live="polite">
+      <div className="relative">
+        {recording && (
+          <div className="absolute -inset-3 rounded-full bg-red-500/20 blur-md animate-ping" />
+        )}
+        {!recording && !busy && (
+          <div className="absolute -inset-2 rounded-full bg-indigo-500/30 blur-lg opacity-70 group-hover:opacity-100" />
+        )}
+        <button
+          type="button"
+          onClick={recording ? stop : start}
+          disabled={disabled || busy}
+          aria-label={recording ? "Stop recording" : "Start recording"}
+          className={`relative flex h-24 w-24 items-center justify-center rounded-full text-white shadow-2xl transition-all duration-300
+            focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/50 disabled:opacity-50 active:scale-95
+            ${
+              recording
+                ? "bg-gradient-to-tr from-red-600 to-rose-500 shadow-[0_0_40px_rgba(239,68,68,0.6)] animate-pulse border-2 border-red-300/40"
+                : "bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-600 shadow-glow-md hover:shadow-glow-lg border border-indigo-400/40 hover:scale-105"
+            }`}
+        >
+          {busy ? (
+            <Loader2 className="h-10 w-10 animate-spin text-white" />
+          ) : recording ? (
+            <Square className="h-8 w-8 fill-white text-white" />
+          ) : state === "success" ? (
+            <Check className="h-10 w-10 text-white" />
+          ) : (
+            <Mic className="h-10 w-10 text-white" />
+          )}
+        </button>
+      </div>
+
+      <div className="text-center">
+        <p className="text-sm font-medium text-slate-300">
+          {state === "idle" && "Tap the microphone to speak"}
+          {recording && (
+            <span className="text-red-400 font-semibold flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-red-500 animate-ping" />
+              Recording… {seconds}s (tap to stop)
+            </span>
+          )}
+          {busy && <span className="text-indigo-300 animate-pulse">Transcribing & structuring with AI…</span>}
+          {state === "success" && <span className="text-emerald-400 font-semibold">Answer recorded ✓</span>}
+          {state === "error" && <span className="text-amber-400 font-medium">Tap microphone to try again</span>}
+        </p>
+        {error && (
+          <p role="alert" className="mt-2 max-w-sm text-center text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg p-2">
+            {error}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
