@@ -1,3 +1,4 @@
+import { chat } from "@/lib/ai/client";
 import { aiOutputSchema } from "@/lib/validation/schemas";
 import { normalizeAnswer } from "@/lib/validation/answers";
 import type { AiResult, Question } from "@/types";
@@ -33,38 +34,15 @@ const FALLBACK: AiResult = {
 
 const LOW_CONFIDENCE = 0.75;
 
-/** Provider-specific: Groq (OpenAI-compatible) chat completions. Swap this function to change providers. */
-async function callModel(userPayload: unknown): Promise<string> {
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) throw new Error("GROQ_API_KEY is not configured");
-  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: process.env.GROQ_CHAT_MODEL || "openai/gpt-oss-120b",
-      temperature: 0,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: JSON.stringify(userPayload) },
-      ],
-    }),
-    signal: AbortSignal.timeout(20_000),
-  });
-  if (!res.ok) throw new Error(`AI request failed (${res.status})`);
-  const json = await res.json();
-  return json?.choices?.[0]?.message?.content ?? "";
-}
-
 export async function extractAnswer(question: Question, transcript: string): Promise<AiResult> {
-  const content = await callModel({
+  const content = await chat({ system: SYSTEM_PROMPT, json: true, user: JSON.stringify({
     question: question.question_text,
     question_type: question.question_type,
     options: question.question_type === "multiple_choice" ? question.options : undefined,
     rating_range: question.question_type === "rating" ? { min: 1, max: 5 } : undefined,
     is_required: question.is_required,
     transcript,
-  });
+  }) });
 
   let parsed;
   try {

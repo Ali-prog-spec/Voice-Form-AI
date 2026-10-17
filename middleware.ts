@@ -23,10 +23,10 @@ export async function middleware(req: NextRequest) {
   } = await supabase.auth.getUser();
   if (!user) {
     const login = new URL("/login", req.url);
-    login.searchParams.set("next", req.nextUrl.pathname);
+    login.searchParams.set("next", req.nextUrl.pathname + req.nextUrl.search);
     return NextResponse.redirect(login);
   }
   return res;
 }
 
-export const config = { matcher: ["/dashboard/:path*", "/forms/:path*"] };
+export const config = { matcher: ["/dashboard/:path*", "/forms/:path*", "/import"] };

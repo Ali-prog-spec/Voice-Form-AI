@@ -10,6 +10,8 @@ interface Props {
   onAudio: (blob: Blob) => Promise<void>;
   disabled?: boolean;
   maxSeconds?: number;
+  /** Called when the user taps the mic (e.g. to silence the voice assistant). */
+  onStart?: () => void;
 }
 
 function pickMimeType() {
@@ -26,7 +28,7 @@ function micError(e: unknown) {
   return "Could not start recording. Please try again.";
 }
 
-export default function VoiceRecorder({ onAudio, disabled, maxSeconds = 90 }: Props) {
+export default function VoiceRecorder({ onAudio, disabled, maxSeconds = 90, onStart }: Props) {
   const [state, setState] = useState<RecorderState>("idle");
   const [error, setError] = useState<string | null>(null);
   const [seconds, setSeconds] = useState(0);
@@ -71,6 +73,7 @@ export default function VoiceRecorder({ onAudio, disabled, maxSeconds = 90 }: Pr
 
   async function start() {
     setError(null);
+    onStart?.();
     if (typeof window === "undefined" || !navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
       return fail("Voice recording isn't supported in this browser. You can type your answer instead.");
     }

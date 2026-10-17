@@ -3,8 +3,19 @@
 import { useCallback, useEffect, useState } from "react";
 import QuestionInput from "@/components/question-renderer/QuestionInput";
 import VoiceRecorder from "@/components/voice-recorder/VoiceRecorder";
+import { useSpeech } from "@/components/voice-recorder/useSpeech";
 import { formatAnswer, normalizeAnswer } from "@/lib/validation/answers";
-import type { AiResult, AnswerValue, PublicForm } from "@/types";
+import type { AiResult, AnswerValue, PublicForm, Question } from "@/types";
+
+/** What the voice assistant reads aloud for a question. */
+function questionSpeech(q: Question) {
+  let text = q.question_text.replace(/[?]*$/, "?");
+  if (q.question_type === "multiple_choice" && q.options?.length) {
+    text += ` The options are: ${q.options.slice(0, -1).join(", ")}${q.options.length > 1 ? ", or " : ""}${q.options[q.options.length - 1]}.`;
+  } else if (q.question_type === "rating") text += " Answer with a number from 1 to 5.";
+  else if (q.question_type === "yes_no") text += " Answer yes or no.";
+  return text;
+}
 
 interface Draft {
   value: AnswerValue | null;
@@ -37,6 +48,12 @@ export default function RespondentFlow({ form }: { form: PublicForm }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [stage, setStage] = useState<"questions" | "summary" | "done">("questions");
+  const [started, setStarted] = useState(false);
+  const [autoRead, setAutoRead] = useState(true);
+  const [explanations, setExplanations] = useState<Record<string, string>>({});
+  const [explaining, setExplaining] = useState(false);
+  const [google, setGoogle] = useState<{ status?: string; prefill?: string } | null>(null);
+  const speech = useSpeech();
 
   const startSession = useCallback(async () => {
     setStartError(null);
@@ -52,6 +69,19 @@ export default function RespondentFlow({ form }: { form: PublicForm }) {
     startSession();
   }, [startSession]);
 
+  // Voice assistant: read each question aloud when it appears and the user still has to answer it.
+  const capturing = draft === null;
+  const { speak, cancel } = speech;
+  useEffect(() => {
+    if (!started || !autoRead || stage !== "questions" || !capturing) return;
+    const current = qs[Math.min(idx, qs.length - 1)];
+    if (current) speak(questionSpeech(current));
+  }, [started, autoRead, stage, capturing, idx, qs, speak]);
+
+  useEffect(() => {
+    if (stage !== "questions") cancel();
+  }, [stage, cancel]);
+
   if (qs.length === 0) return <p className="text-center text-slate-600">This form has no questions.</p>;
   if (startError)
     return (
@@ -61,6 +91,32 @@ export default function RespondentFlow({ form }: { form: PublicForm }) {
       </div>
     );
   if (!sessionId) return <p className="text-center text-slate-500">Loading…</p>;
+
+  // A tap is required before browsers allow speech, so the assistant starts from this welcome step.
+  if (!started && speech.supported) {
+    return (
+      <div className="card py-10 text-center">
+        <p className="text-sm text-slate-400">{qs.length} questions · answer by speaking</p>
+        <p className="mx-auto mt-2 max-w-sm text-sm text-slate-400">
+          A voice assistant will read each question to you and can explain it if it&apos;s unclear.
+        </p>
+        <button
+          className="btn-primary mt-6 px-6 py-3"
+          onClick={() => {
+            setStarted(true);
+            speech.speak(`Hi! I'll read each question aloud. Tap the microphone to answer, or ask me to explain.`);
+          }}
+        >
+          🔊 Start with voice assistant
+        </button>
+        <p className="mt-4">
+          <button className="text-sm text-slate-500 underline" onClick={() => { setAutoRead(false); setStarted(true); }}>
+            Continue without audio
+          </button>
+        </p>
+      </div>
+    );
+  }
 
   const q = qs[Math.min(idx, qs.length - 1)];
   const isLast = idx === qs.length - 1;
@@ -125,11 +181,31 @@ export default function RespondentFlow({ form }: { form: PublicForm }) {
     }
   }
 
+  async function explain() {
+    if (explaining) return;
+    const cached = explanations[q.id];
+    if (cached) return speech.speak(cached);
+    setExplaining(true);
+    try {
+      const r = await postJson<{ explanation: string }>("/api/ai/explain-question", {
+        session_id: sessionId,
+        question_id: q.id,
+      });
+      setExplanations((e) => ({ ...e, [q.id]: r.explanation }));
+      speech.speak(r.explanation);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "The assistant is unavailable right now.");
+    } finally {
+      setExplaining(false);
+    }
+  }
+
   async function submit() {
     setBusy(true);
     setError(null);
     try {
-      await postJson(`/api/sessions/${sessionId}/submit`, {});
+      const r = await postJson<{ google?: string; prefill_url?: string }>(`/api/sessions/${sessionId}/submit`, {});
+      setGoogle(r.google ? { status: r.google, prefill: r.prefill_url } : null);
       setStage("done");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not submit.");
@@ -162,7 +238,20 @@ export default function RespondentFlow({ form }: { form: PublicForm }) {
           ✓
         </div>
         <h2 className="text-2xl font-bold text-white">Thank you!</h2>
-        <p className="mt-2 text-slate-400">Your response has been transcribed, structured, and saved successfully.</p>
+        <p className="mt-2 text-slate-400">
+          {google?.status === "submitted"
+            ? "Your answers were filled into the Google Form and submitted."
+            : "Your response has been transcribed, structured, and saved successfully."}
+        </p>
+        {google?.status === "failed" && google.prefill && (
+          <div className="mx-auto mt-5 max-w-sm rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-300">
+            <p>We saved your answers but couldn&apos;t send them to the Google Form automatically.</p>
+            <a href={google.prefill} target="_blank" rel="noreferrer" className="btn-primary mt-3 w-full">
+              Open pre-filled Google Form
+            </a>
+            <p className="mt-2 text-xs">Review it and press Submit there.</p>
+          </div>
+        )}
       </div>
     );
 
@@ -211,7 +300,32 @@ export default function RespondentFlow({ form }: { form: PublicForm }) {
       <div className="mt-8">
         {!reviewing && (
           <div className="space-y-6">
-            <VoiceRecorder onAudio={handleAudio} disabled={busy} />
+            <VoiceRecorder onAudio={handleAudio} disabled={busy} onStart={cancel} />
+            {speech.supported && (
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <button className="btn-secondary text-xs" onClick={() => speech.speak(questionSpeech(q))}>
+                  🔊 {speech.speaking ? "Speaking…" : "Listen again"}
+                </button>
+                <button className="btn-secondary text-xs" disabled={explaining} onClick={explain}>
+                  💡 {explaining ? "Thinking…" : "Explain this question"}
+                </button>
+                <button
+                  className="btn-secondary text-xs"
+                  aria-pressed={autoRead}
+                  onClick={() => {
+                    if (autoRead) speech.cancel();
+                    setAutoRead(!autoRead);
+                  }}
+                >
+                  Auto-read: {autoRead ? "on" : "off"}
+                </button>
+              </div>
+            )}
+            {explanations[q.id] && (
+              <p className="rounded-xl border border-blue-500/20 bg-blue-500/10 p-3 text-sm text-blue-200">
+                💡 {explanations[q.id]}
+              </p>
+            )}
             <p className="text-center">
               <button
                 className="text-sm text-slate-500 underline"

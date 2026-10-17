@@ -41,15 +41,24 @@ export default function Home() {
           Respondents talk naturally instead of typing on mobile. VoiceForm transcribes speech and extracts structured data in real time.
         </p>
 
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          <Link href="/login?tab=signup" className="btn-primary px-5 py-2.5 text-sm flex items-center gap-2">
-            <span>Create your first form</span>
+        <form action="/import" method="get" className="mx-auto mt-8 flex max-w-xl flex-col gap-3 sm:flex-row">
+          <input
+            name="url"
+            type="url"
+            required
+            aria-label="Google Form link"
+            placeholder="Paste your Google Form link…"
+            className="input flex-1"
+          />
+          <button className="btn-primary px-5 py-2.5 text-sm flex items-center justify-center gap-2">
+            <span>Import form</span>
             <ArrowRight className="h-4 w-4" />
-          </Link>
-          <Link href="/dashboard" className="btn-secondary px-4 py-2.5 text-sm">
-            Open dashboard
-          </Link>
-        </div>
+          </button>
+        </form>
+        <p className="mt-3 text-xs text-zinc-500">
+          Respondents answer by voice. Answers are filled into your Google Form.{" "}
+          <Link href="/dashboard" className="underline hover:text-zinc-300">Open dashboard</Link>
+        </p>
 
         {/* Minimalist Product Preview */}
         <div className="mt-14 max-w-3xl mx-auto rounded-xl border border-white/[0.08] bg-[#121316] p-6 text-left shadow-card">

@@ -49,9 +49,13 @@ export default async function Dashboard() {
 
         <div className="flex items-center gap-2.5">
           <DemoButton />
-          <Link href="/forms/new" className="btn-primary text-xs flex items-center gap-1.5">
+          <Link href="/forms/new" className="btn-secondary text-xs flex items-center gap-1.5">
             <Plus className="h-3.5 w-3.5" />
             <span>New form</span>
+          </Link>
+          <Link href="/import" className="btn-primary text-xs flex items-center gap-1.5">
+            <Plus className="h-3.5 w-3.5" />
+            <span>Import Google Form</span>
           </Link>
         </div>
       </header>

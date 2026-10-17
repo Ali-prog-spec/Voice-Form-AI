@@ -23,6 +23,9 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if ("error" in body) return body.error;
   const { title, description, questions } = body.data;
 
+  const { data: current } = await supabase.from("forms").select("source").eq("id", id).maybeSingle();
+  if (current?.source === "google") return fail("Imported Google Forms cannot be edited here. Re-import the form instead.", 400);
+
   const { data: updated, error } = await supabase
     .from("forms")
     .update({ title, description: description || null, updated_at: new Date().toISOString() })
