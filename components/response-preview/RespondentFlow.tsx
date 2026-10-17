@@ -1,0 +1,283 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import QuestionInput from "@/components/question-renderer/QuestionInput";
+import VoiceRecorder from "@/components/voice-recorder/VoiceRecorder";
+import { formatAnswer, normalizeAnswer } from "@/lib/validation/answers";
+import type { AiResult, AnswerValue, PublicForm } from "@/types";
+
+interface Draft {
+  value: AnswerValue | null;
+  transcript: string | null;
+  confidence: number | null;
+  needsConfirmation: boolean;
+  edited: boolean;
+}
+
+async function postJson<T>(url: string, body: unknown): Promise<T> {
+  let res: Response;
+  try {
+    res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  } catch {
+    throw new Error("Network problem. Check your connection and try again.");
+  }
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json?.error ?? "Something went wrong. Please try again.");
+  return json as T;
+}
+
+export default function RespondentFlow({ form }: { form: PublicForm }) {
+  const qs = form.questions;
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [startError, setStartError] = useState<string | null>(null);
+  const [idx, setIdx] = useState(0);
+  const [saved, setSaved] = useState<Record<string, Draft>>({});
+  const [draft, setDraft] = useState<Draft | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [stage, setStage] = useState<"questions" | "summary" | "done">("questions");
+
+  const startSession = useCallback(async () => {
+    setStartError(null);
+    try {
+      const s = await postJson<{ id: string }>("/api/sessions", { form_id: form.id });
+      setSessionId(s.id);
+    } catch (e) {
+      setStartError(e instanceof Error ? e.message : "Could not start.");
+    }
+  }, [form.id]);
+
+  useEffect(() => {
+    startSession();
+  }, [startSession]);
+
+  if (qs.length === 0) return <p className="text-center text-slate-600">This form has no questions.</p>;
+  if (startError)
+    return (
+      <div className="card text-center">
+        <p role="alert" className="text-red-600">{startError}</p>
+        <button className="btn-primary mt-4" onClick={startSession}>Retry</button>
+      </div>
+    );
+  if (!sessionId) return <p className="text-center text-slate-500">Loading…</p>;
+
+  const q = qs[Math.min(idx, qs.length - 1)];
+  const isLast = idx === qs.length - 1;
+
+  function goTo(i: number) {
+    setIdx(i);
+    setDraft(saved[qs[i].id] ?? null);
+    setEditing(false);
+    setError(null);
+    setStage("questions");
+  }
+
+  async function handleAudio(blob: Blob) {
+    const fd = new FormData();
+    fd.append("audio", blob, blob.type.includes("mp4") ? "audio.mp4" : "audio.webm");
+    fd.append("session_id", sessionId!);
+    let transcript: string;
+    try {
+      const res = await fetch("/api/speech/transcribe", { method: "POST", body: fd });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json?.error ?? "Speech recognition failed. Please try again.");
+      transcript = json.transcript;
+    } catch (e) {
+      if (e instanceof TypeError) throw new Error("Network problem. Check your connection and try again.");
+      throw e;
+    }
+    const ai = await postJson<AiResult>("/api/ai/process-answer", {
+      session_id: sessionId,
+      question_id: q.id,
+      transcript,
+    });
+    setDraft({
+      value: ai.answer,
+      transcript,
+      confidence: ai.confidence,
+      needsConfirmation: ai.needs_confirmation || ai.answer === null,
+      edited: false,
+    });
+    setEditing(false);
+    setError(null);
+  }
+
+  async function saveAndContinue(d: Draft | null) {
+    setBusy(true);
+    setError(null);
+    try {
+      await postJson("/api/responses", {
+        session_id: sessionId,
+        question_id: q.id,
+        raw_transcript: d?.transcript ?? null,
+        answer: d?.value ?? null,
+        confidence: d?.confidence ?? null,
+        was_edited: d?.edited ?? false,
+      });
+      if (d?.value != null) setSaved((s) => ({ ...s, [q.id]: { ...d, needsConfirmation: false } }));
+      if (isLast) setStage("summary");
+      else goTo(idx + 1);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not save your answer.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function submit() {
+    setBusy(true);
+    setError(null);
+    try {
+      await postJson(`/api/sessions/${sessionId}/submit`, {});
+      setStage("done");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not submit.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const progress = (
+    <div className="mb-8">
+      <p className="mb-2 text-sm text-slate-500">
+        {stage === "questions" ? `Question ${idx + 1} of ${qs.length}` : "Review"}
+      </p>
+      <div className="h-1.5 rounded-full bg-slate-200" role="progressbar" aria-valuemin={0} aria-valuemax={qs.length} aria-valuenow={stage === "questions" ? idx : qs.length}>
+        <div className="h-full rounded-full bg-brand-600 transition-all" style={{ width: `${((stage === "questions" ? idx : qs.length) / qs.length) * 100}%` }} />
+      </div>
+    </div>
+  );
+
+  if (stage === "done")
+    return (
+      <div className="card py-12 text-center">
+        <div className="text-4xl">✅</div>
+        <h2 className="mt-3 text-xl font-semibold">Thank you!</h2>
+        <p className="mt-1 text-slate-600">Your response has been submitted.</p>
+      </div>
+    );
+
+  if (stage === "summary") {
+    const missing = qs.filter((x) => x.is_required && saved[x.id]?.value == null);
+    return (
+      <div>
+        {progress}
+        <h2 className="text-xl font-semibold">Review your answers</h2>
+        <ul className="mt-4 space-y-3">
+          {qs.map((x, i) => (
+            <li key={x.id} className="card flex items-start justify-between gap-3">
+              <div>
+                <p className="text-sm text-slate-500">{x.question_text}</p>
+                <p className="mt-1 font-medium">
+                  {saved[x.id]?.value != null ? formatAnswer(x, saved[x.id].value!) : <span className="text-slate-400">Skipped</span>}
+                </p>
+              </div>
+              <button className="btn-secondary shrink-0" onClick={() => goTo(i)}>Edit</button>
+            </li>
+          ))}
+        </ul>
+        {error && <p role="alert" className="mt-4 text-sm text-red-600">{error}</p>}
+        {missing.length > 0 && (
+          <p className="mt-4 text-sm text-amber-700">Please answer all required questions before submitting.</p>
+        )}
+        <button className="btn-primary mt-6 w-full" disabled={busy || missing.length > 0} onClick={submit}>
+          {busy ? "Submitting…" : "Submit"}
+        </button>
+      </div>
+    );
+  }
+
+  const reviewing = draft !== null;
+  const hasValue = draft?.value != null;
+  const unsure = draft?.needsConfirmation ?? false;
+
+  return (
+    <div>
+      {progress}
+      <h2 className="text-2xl font-semibold leading-snug">
+        {q.question_text}
+        {!q.is_required && <span className="ml-2 text-sm font-normal text-slate-400">(optional)</span>}
+      </h2>
+
+      <div className="mt-8">
+        {!reviewing && (
+          <div className="space-y-6">
+            <VoiceRecorder onAudio={handleAudio} disabled={busy} />
+            <p className="text-center">
+              <button
+                className="text-sm text-slate-500 underline"
+                onClick={() => {
+                  setDraft({ value: null, transcript: null, confidence: null, needsConfirmation: false, edited: true });
+                  setEditing(true);
+                }}
+              >
+                Type instead
+              </button>
+            </p>
+          </div>
+        )}
+
+        {reviewing && !editing && (
+          <div className="card">
+            {draft.transcript && (
+              <p className="mb-3 text-sm italic text-slate-500">You said: “{draft.transcript}”</p>
+            )}
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">AI understood</p>
+            <p className="mt-1 text-xl font-semibold">
+              {hasValue ? formatAnswer(q, draft.value!) : "I couldn’t work out an answer."}
+            </p>
+            {unsure && hasValue && (
+              <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                I’m not completely sure — please confirm this is right, or edit it.
+              </p>
+            )}
+          </div>
+        )}
+
+        {reviewing && editing && (
+          <div className="card space-y-4">
+            <QuestionInput question={q} value={draft.value} onChange={(v) => setDraft({ ...draft, value: v, edited: true })} />
+            <div className="flex gap-2">
+              <button
+                className="btn-primary"
+                disabled={normalizeAnswer(q, draft.value) === null}
+                onClick={() => {
+                  setDraft({ ...draft, value: normalizeAnswer(q, draft.value), needsConfirmation: false });
+                  setEditing(false);
+                }}
+              >
+                Done
+              </button>
+              <button className="btn-secondary" onClick={() => { setDraft(saved[q.id] ?? null); setEditing(false); }}>Cancel</button>
+            </div>
+          </div>
+        )}
+
+        {error && <p role="alert" className="mt-4 text-sm text-red-600">{error}</p>}
+
+        {reviewing && !editing && (
+          <div className="mt-6 flex flex-wrap gap-2">
+            <button className="btn-secondary" onClick={() => setEditing(true)}>Edit</button>
+            <button className="btn-secondary" onClick={() => { setDraft(null); setError(null); }}>Retry</button>
+            {hasValue && (
+              <button className="btn-primary ml-auto" disabled={busy} onClick={() => saveAndContinue(draft)}>
+                {busy ? "Saving…" : unsure ? "Confirm & continue →" : isLast ? "Continue →" : "Continue →"}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="mt-10 flex items-center justify-between border-t border-slate-200 pt-4">
+        <button className="btn-secondary" disabled={idx === 0 || busy} onClick={() => goTo(idx - 1)}>← Back</button>
+        {!q.is_required && !reviewing && (
+          <button className="btn-secondary" disabled={busy} onClick={() => saveAndContinue(null)}>Skip →</button>
+        )}
+        {saved[q.id] && !reviewing && (
+          <button className="btn-secondary" onClick={() => (isLast ? setStage("summary") : goTo(idx + 1))}>Next →</button>
+        )}
+      </div>
+    </div>
+  );
+}
