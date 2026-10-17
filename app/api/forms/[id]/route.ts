@@ -37,3 +37,15 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if (await saveQuestions(supabase, id, questions)) return fail("Could not save questions", 500);
   return NextResponse.json({ id });
 }
+
+export async function DELETE(_req: Request, { params }: Ctx) {
+  const { id } = await params;
+  const { supabase, user } = await getCreator();
+  if (!user) return fail("Unauthorized", 401);
+  if (!uuid.safeParse(id).success) return fail("Invalid id");
+  // RLS limits this to the signed-in owner; questions, sessions and responses cascade.
+  const { data, error } = await supabase.from("forms").delete().eq("id", id).select("id");
+  if (error) return fail("Could not delete form", 500);
+  if (!data?.length) return fail("Not found", 404);
+  return NextResponse.json({ ok: true });
+}

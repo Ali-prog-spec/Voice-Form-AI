@@ -88,3 +88,29 @@ export function CopyLinkButton({ slug }: { slug: string }) {
     </button>
   );
 }
+
+export function DeleteFormButton({ id, title }: { id: string; title: string }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <>
+      <button
+        className="btn-danger text-xs"
+        disabled={busy}
+        onClick={async () => {
+          if (!window.confirm(`Delete "${title}" and all its responses? This cannot be undone.`)) return;
+          setBusy(true);
+          setError(null);
+          const res = await fetch(`/api/forms/${id}`, { method: "DELETE" }).catch(() => null);
+          setBusy(false);
+          if (!res?.ok) return setError("Could not delete. Try again.");
+          router.refresh();
+        }}
+      >
+        {busy ? "Deleting…" : "Delete"}
+      </button>
+      {error && <span role="alert" className="text-xs text-red-400">{error}</span>}
+    </>
+  );
+}

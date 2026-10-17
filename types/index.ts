@@ -32,6 +32,7 @@ export interface Question {
 export interface Form {
   id: string;
   source?: "native" | "google";
+  google_form_id?: string | null;
   title: string;
   description: string | null;
   is_published: boolean;

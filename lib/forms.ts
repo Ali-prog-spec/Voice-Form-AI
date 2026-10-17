@@ -33,7 +33,7 @@ export async function saveQuestions(db: SupabaseClient, formId: string, question
 export async function getFormWithQuestions(db: SupabaseClient, id: string) {
   const { data: form } = await db
     .from("forms")
-    .select("id,title,description,is_published,public_slug,source")
+    .select("id,title,description,is_published,public_slug,source,google_form_id")
     .eq("id", id)
     .maybeSingle();
   if (!form) return null;

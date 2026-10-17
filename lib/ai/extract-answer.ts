@@ -20,6 +20,12 @@ Rules:
 7. Do not add information that the user did not say.
 8. Return strict JSON matching the requested schema.
 
+Spoken formatting: for short text answers that are emails, IDs, usernames, URLs or codes, convert spoken
+symbols and spelling ("at" -> @, "dot" -> ., "dash" -> -, "underscore" -> _, letters said one by one ->
+joined letters, digits said one by one -> joined digits) and write the value without spaces.
+Never apply these conversions to ordinary sentences. If the transcript may be misheard (e.g. an
+unusual ID or domain), set needs_confirmation=true.
+
 Be question-aware: for text questions, keep only the part of the speech that answers the question
 (e.g. for "What could we improve?" omit praise). If nothing answers the question, use answer=null.
 

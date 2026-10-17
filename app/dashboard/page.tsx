@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { Plus, ExternalLink, BarChart3, Edit3, FileText, CheckCircle2, Clock } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import Logo from "@/components/ui/Logo";
-import { CopyLinkButton, DemoButton, SignOutButton } from "@/components/ui/DashboardActions";
+import { CopyLinkButton, DeleteFormButton, DemoButton, SignOutButton } from "@/components/ui/DashboardActions";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +11,7 @@ type Row = {
   id: string;
   title: string;
   is_published: boolean;
+  source: string | null;
   public_slug: string | null;
   created_at: string;
   sessions: { status: string }[];
@@ -25,7 +26,7 @@ export default async function Dashboard() {
 
   const { data } = await supabase
     .from("forms")
-    .select("id,title,is_published,public_slug,created_at,sessions(status)")
+    .select("id,title,is_published,source,public_slug,created_at,sessions(status)")
     .order("created_at", { ascending: false });
   const forms = (data ?? []) as Row[];
 
@@ -120,7 +121,7 @@ export default async function Dashboard() {
                         <ExternalLink className="h-3 w-3 text-zinc-400" />
                         <span>Open</span>
                       </Link>
-                      <CopyLinkButton slug={f.public_slug} />
+                      {f.source !== "google" && <CopyLinkButton slug={f.public_slug} />}
                     </>
                   )}
                   <Link
@@ -130,13 +131,16 @@ export default async function Dashboard() {
                     <BarChart3 className="h-3 w-3 text-zinc-400" />
                     <span>Responses</span>
                   </Link>
-                  <Link
+                  {f.source !== "google" && (
+                    <Link
                     href={`/forms/${f.id}`}
                     className="btn-secondary text-xs flex items-center gap-1"
                   >
                     <Edit3 className="h-3 w-3 text-zinc-400" />
                     <span>Edit</span>
                   </Link>
+                  )}
+                  <DeleteFormButton id={f.id} title={f.title || "Untitled Form"} />
                 </div>
               </div>
             );

@@ -15,6 +15,7 @@ export default async function ResponsesPage({ params }: { params: Promise<{ id: 
   const supabase = await createClient();
   const data = await getFormWithQuestions(supabase, id);
   if (!data) notFound();
+  const isGoogle = data.form.source === "google";
   const sessions = await getResponsesData(supabase, id);
 
   return (
@@ -29,6 +30,18 @@ export default async function ResponsesPage({ params }: { params: Promise<{ id: 
           <span>Dashboard</span>
         </Link>
       </div>
+
+      <>
+      {isGoogle && data.form.google_form_id && (
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/[0.08] bg-white/[0.03] p-4">
+          <p className="text-sm text-slate-300">
+            Imported from Google Forms — voice answers are also filled into your Google Form. The table below shows the responses saved here.
+          </p>
+          <a href={`https://docs.google.com/forms/d/e/${data.form.google_form_id}/viewform`} target="_blank" rel="noreferrer" className="btn-primary text-xs">
+            Open Google Form
+          </a>
+        </div>
+      )}
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -47,6 +60,7 @@ export default async function ResponsesPage({ params }: { params: Promise<{ id: 
       </div>
 
       <ResponsesTable questions={data.questions} sessions={sessions} />
+      </>
     </main>
   );
 }

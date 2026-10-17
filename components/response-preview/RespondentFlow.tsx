@@ -45,6 +45,8 @@ export default function RespondentFlow({ form }: { form: PublicForm }) {
   const [saved, setSaved] = useState<Record<string, Draft>>({});
   const [draft, setDraft] = useState<Draft | null>(null);
   const [editing, setEditing] = useState(false);
+  const [fixing, setFixing] = useState(false);
+  const [lastFix, setLastFix] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [stage, setStage] = useState<"questions" | "summary" | "done">("questions");
@@ -125,24 +127,51 @@ export default function RespondentFlow({ form }: { form: PublicForm }) {
     setIdx(i);
     setDraft(saved[qs[i].id] ?? null);
     setEditing(false);
+    setFixing(false);
+    setLastFix(null);
     setError(null);
     setStage("questions");
   }
 
-  async function handleAudio(blob: Blob) {
+  async function transcribe(blob: Blob): Promise<string> {
     const fd = new FormData();
     fd.append("audio", blob, blob.type.includes("mp4") ? "audio.mp4" : "audio.webm");
     fd.append("session_id", sessionId!);
-    let transcript: string;
     try {
       const res = await fetch("/api/speech/transcribe", { method: "POST", body: fd });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json?.error ?? "Speech recognition failed. Please try again.");
-      transcript = json.transcript;
+      return json.transcript as string;
     } catch (e) {
       if (e instanceof TypeError) throw new Error("Network problem. Check your connection and try again.");
       throw e;
     }
+  }
+
+  /** Voice edit: apply a spoken correction ("it's isb not isp") to the answer already filled in. */
+  async function handleFixAudio(blob: Blob) {
+    if (!draft || draft.value == null) throw new Error("There is no answer to correct yet.");
+    const correction = await transcribe(blob);
+    const ai = await postJson<AiResult>("/api/ai/edit-answer", {
+      session_id: sessionId,
+      question_id: q.id,
+      current_answer: draft.value,
+      transcript: correction,
+    });
+    setDraft({
+      ...draft,
+      value: ai.answer ?? draft.value,
+      confidence: ai.confidence,
+      needsConfirmation: ai.needs_confirmation,
+      edited: true,
+    });
+    setLastFix(correction);
+    setFixing(false);
+    setError(null);
+  }
+
+  async function handleAudio(blob: Blob) {
+    const transcript = await transcribe(blob);
     const ai = await postJson<AiResult>("/api/ai/process-answer", {
       session_id: sessionId,
       question_id: q.id,
@@ -378,10 +407,29 @@ export default function RespondentFlow({ form }: { form: PublicForm }) {
 
         {error && <p role="alert" className="mt-4 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl p-3">{error}</p>}
 
-        {reviewing && !editing && (
+        {reviewing && !editing && lastFix && !fixing && (
+          <p className="mt-3 text-sm italic text-slate-400">Correction heard: “{lastFix}”</p>
+        )}
+
+        {reviewing && !editing && fixing && (
+          <div className="card mt-6 space-y-4">
+            <p className="text-center text-sm text-slate-300">
+              Say what to change — e.g. “it&apos;s I S B, not I S P”, or “replace Monday with Tuesday”.
+            </p>
+            <VoiceRecorder onAudio={handleFixAudio} disabled={busy} onStart={cancel} />
+            <p className="text-center">
+              <button className="btn-secondary text-xs" onClick={() => { setFixing(false); setError(null); }}>Cancel</button>
+            </p>
+          </div>
+        )}
+
+        {reviewing && !editing && !fixing && (
           <div className="mt-6 flex flex-wrap gap-2">
             <button className="btn-secondary" onClick={() => setEditing(true)}>Edit</button>
-            <button className="btn-secondary" onClick={() => { setDraft(null); setError(null); }}>Retry</button>
+            {hasValue && (
+              <button className="btn-secondary" onClick={() => { setFixing(true); setError(null); }}>🎙 Fix by voice</button>
+            )}
+            <button className="btn-secondary" onClick={() => { setDraft(null); setLastFix(null); setError(null); }}>Retry</button>
             {hasValue && (
               <button className="btn-primary ml-auto shadow-glow-sm" disabled={busy} onClick={() => saveAndContinue(draft)}>
                 {busy ? "Saving…" : unsure ? "Confirm & continue →" : isLast ? "Continue →" : "Continue →"}
