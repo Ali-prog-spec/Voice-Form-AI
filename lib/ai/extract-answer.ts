@@ -41,7 +41,7 @@ async function callModel(userPayload: unknown): Promise<string> {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: process.env.GROQ_CHAT_MODEL || "llama-3.3-70b-versatile",
+      model: process.env.GROQ_CHAT_MODEL || "openai/gpt-oss-120b",
       temperature: 0,
       response_format: { type: "json_object" },
       messages: [
